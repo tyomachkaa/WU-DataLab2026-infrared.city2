@@ -4,3 +4,9 @@
 .DS_Store
 .DS_Store
 .DS_Store
+.DS_Store
+/__pycache__
+/aois_json
+/aois_json
+/processed_stacks
+/results
