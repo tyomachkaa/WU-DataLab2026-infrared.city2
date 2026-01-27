@@ -42,3 +42,8 @@ Clip_WorldCover_to_AOI.ipynb
 greenspace_predictor_app_FINAL.py
 random_forest_model.pkl
 greenspace_predictor_app_FINAL.py
+/multi_city_training
+Output_London_RFtrained.png
+Output_London_RFtrained2.png
+download.png
+.DS_Store

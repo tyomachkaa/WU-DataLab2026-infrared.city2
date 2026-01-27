@@ -28,6 +28,7 @@ import shutil
 import numpy as np
 import rasterio
 from sklearn.ensemble import RandomForestClassifier
+from scipy.ndimage import median_filter
 import matplotlib
 matplotlib.use('Agg')  # Non-interactive backend
 import matplotlib.pyplot as plt
@@ -37,13 +38,19 @@ import base64
 from datetime import datetime
 import joblib
 
+# Prediction threshold - adjust to calibrate green percentage
+# Higher value = less green predicted, Lower value = more green predicted
+PREDICTION_THRESHOLD = 0.55  # Default 0.5, increased to reduce over-prediction
+
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024  # 2GB max
 app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
 
-# Global model variable (will be loaded or created)
+# Global model and scaler variables (will be loaded or created)
 TRAINED_MODEL = None
+FEATURE_SCALER = None
 MODEL_PATH = "/Users/tyomachka/Desktop/WU/Data_Lab.TMP/rep.infrared.city/random_forest_model.pkl"
+SCALER_PATH = "/Users/tyomachka/Desktop/WU/Data_Lab.TMP/rep.infrared.city/feature_scaler.pkl"
 
 # HTML Template
 HTML_TEMPLATE = """
@@ -601,48 +608,58 @@ latest_visualization = None
 
 
 def load_or_create_model():
-    """Load existing model or create a demo model."""
-    global TRAINED_MODEL
-    
+    """Load existing model and scaler or create a demo model."""
+    global TRAINED_MODEL, FEATURE_SCALER
+
     if os.path.exists(MODEL_PATH):
         print(f"✓ Loading trained model from {MODEL_PATH}")
         TRAINED_MODEL = joblib.load(MODEL_PATH)
-        
+
+        # Load the feature scaler if it exists
+        if os.path.exists(SCALER_PATH):
+            print(f"✓ Loading feature scaler from {SCALER_PATH}")
+            FEATURE_SCALER = joblib.load(SCALER_PATH)
+        else:
+            print(f"⚠ No scaler found at {SCALER_PATH}")
+            print(f"  Predictions will run without feature scaling")
+            FEATURE_SCALER = None
+
         # Try to load metrics from the same folder
         model_dir = os.path.dirname(MODEL_PATH)
         metrics_file = os.path.join(model_dir, "metrics.json")
-        
+
         model_info = {"n_cities": "Multiple", "accuracy": "Trained"}
-        
+
         if os.path.exists(metrics_file):
             try:
                 import json
                 with open(metrics_file, 'r') as f:
                     metrics = json.load(f)
-                
+
                 accuracy = metrics.get('accuracy', 0) * 100
                 n_cities = metrics.get('n_cities', 'Multiple')
-                
+
                 model_info = {
                     "n_cities": n_cities,
                     "accuracy": f"{accuracy:.1f}"
                 }
-                
+
                 print(f"  Model trained on {n_cities} cities")
                 print(f"  Accuracy: {accuracy:.1f}%")
                 print(f"  Precision: {metrics.get('precision', 0)*100:.1f}%")
                 print(f"  Recall: {metrics.get('recall', 0)*100:.1f}%")
                 print(f"  F1-Score: {metrics.get('f1_score', 0)*100:.1f}%")
-                
+
             except Exception as e:
                 print(f"  Could not load metrics: {e}")
-        
+
         return True, model_info
     else:
         print("⚠ No trained model found. Creating demo model...")
         print(f"  Expected model at: {MODEL_PATH}")
         # Create a simple demo model (you should train a real one)
         TRAINED_MODEL = RandomForestClassifier(n_estimators=50, max_depth=15, random_state=42)
+        FEATURE_SCALER = None
         return False, {"n_cities": "Demo", "accuracy": "N/A"}
 
 
@@ -670,11 +687,25 @@ def predict_green_spaces(sentinel_file):
     X_valid = X[valid_mask]
     
     print(f"Valid pixels: {len(X_valid):,} / {len(X):,} ({100*len(X_valid)/len(X):.1f}%)")
-    
+
+    # Apply feature scaling if scaler is available
+    if FEATURE_SCALER is not None:
+        print("Applying feature scaling...")
+        X_valid_scaled = FEATURE_SCALER.transform(X_valid)
+    else:
+        print("No scaler available, using raw features")
+        X_valid_scaled = X_valid
+
     # Predict
-    if hasattr(TRAINED_MODEL, 'predict'):
-        print("Running Random Forest prediction...")
-        y_pred_valid = TRAINED_MODEL.predict(X_valid)
+    if hasattr(TRAINED_MODEL, 'predict_proba'):
+        print(f"Running Random Forest prediction (threshold={PREDICTION_THRESHOLD})...")
+        y_proba = TRAINED_MODEL.predict_proba(X_valid_scaled)
+        # Use probability of green class (class 1) with adjustable threshold
+        y_pred_valid = (y_proba[:, 1] >= PREDICTION_THRESHOLD).astype(int)
+        print(f"Predicted {np.sum(y_pred_valid == 1):,} green pixels")
+    elif hasattr(TRAINED_MODEL, 'predict'):
+        print("Running Random Forest prediction (no probability threshold)...")
+        y_pred_valid = TRAINED_MODEL.predict(X_valid_scaled)
         print(f"Predicted {np.sum(y_pred_valid == 1):,} green pixels")
     else:
         print("WARNING: Using demo NDVI-based prediction")
@@ -682,18 +713,25 @@ def predict_green_spaces(sentinel_file):
         # Assuming bands 4, 11, 18 are NDVI for each month
         ndvi_indices = [4, 11, 18] if n_bands >= 21 else [min(4, n_bands-1)]
         ndvi_indices = [i for i in ndvi_indices if i < n_bands]
-        
+
         if ndvi_indices:
             ndvi_mean = np.mean([X_valid[:, i] for i in ndvi_indices], axis=0)
             y_pred_valid = (ndvi_mean > 0.3).astype(int)
         else:
             # Fallback: use first available band
             y_pred_valid = (X_valid[:, 0] > np.median(X_valid[:, 0])).astype(int)
-    
+
     # Create full prediction map
     y_pred = np.full(height * width, np.nan)
     y_pred[valid_mask] = y_pred_valid
     y_pred_map = y_pred.reshape(height, width)
+
+    # Apply median filter to remove salt-and-pepper noise (white dots)
+    print("Applying spatial smoothing to remove noise...")
+    nan_mask = np.isnan(y_pred_map)
+    temp_map = np.where(nan_mask, 0, y_pred_map).astype(np.float32)
+    temp_map_filtered = median_filter(temp_map, size=3)  # 3x3 balances noise removal and detail
+    y_pred_map = np.where(nan_mask, np.nan, np.round(temp_map_filtered))
     
     # Calculate statistics
     green_pixels = np.sum(y_pred_map == 1)
@@ -757,9 +795,13 @@ def create_visualization(X_stack, prediction_map, stats):
         axes[1].axis('off')
         plt.colorbar(im, ax=axes[1], fraction=0.046, pad=0.04)
     
-    # 3. Prediction
-    axes[2].imshow(prediction_map, cmap='RdYlGn', vmin=0, vmax=1)
-    axes[2].set_title(f'Green Space Prediction\n{stats["green_percentage"]:.1f}% Green', 
+    # 3. Prediction - handle NaN values properly
+    cmap = plt.cm.RdYlGn.copy()
+    cmap.set_bad(color='gray')  # NaN values will be gray instead of white
+    # Create masked array to properly handle NaN
+    prediction_masked = np.ma.masked_invalid(prediction_map)
+    axes[2].imshow(prediction_masked, cmap=cmap, vmin=0, vmax=1)
+    axes[2].set_title(f'Green Space Prediction\n{stats["green_percentage"]:.1f}% Green',
                      fontsize=14, fontweight='bold')
     axes[2].axis('off')
     
