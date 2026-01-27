@@ -1,49 +1,51 @@
+# OS files
 .DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data files (large)
+data/sentinel_stacks/
+data/worldcover/
+data/sentinel_raw/
+data/aois/
+
+# Model files (large)
+models/*.pkl
+models/*.keras
+models/*.json
+
+# Outputs (generated)
+outputs/
+
+# Old paths (legacy)
 /cache
 /sentinel_data
-.DS_Store
-.DS_Store
-.DS_Store
-.DS_Store
-/__pycache__
-/aois_json
-/aois_json
 /processed_stacks
 /results
 /ESA_WORLDCOVER_10M_2021_V200
 /ESA_WorldCover_10m_2021_v200_S39E144_Map
-.DS_Store
-.DS_Store
-.DS_Store
-.DS_Store
-.DS_Store
-.DS_Store
-.DS_Store
-.DS_Store
-.gitignore
-WorldCover_Artem/London_WC.tif
-WorldCover_Artem/Melbourne_WC.tif
-WorldCover_Artem/Paris_WC.tif
-WorldCover_Artem/San_Francisco_WC.tif
-WorldCover_Artem/Seattle.tif
-WorldCover_Clipped/all_cities_worldcover.png
-WorldCover_Clipped/London_WorldCover_clipped.tif
-WorldCover_Clipped/Melbourne_WorldCover_clipped.tif
-WorldCover_Clipped/Paris_WorldCover_clipped.tif
-WorldCover_Clipped/San_Francisco_WorldCover_clipped.tif
-WorldCover_Clipped/Seattle_WorldCover_clipped.tif
-WorldCover_Clipped/worldcover_osm_comparison.png
-.DS_Store
 /WorldCover_Clipped
-Clip_WorldCover_to_AOI.ipynb
-Clip_WorldCover_to_AOI.ipynb
-Clip_WorldCover_to_AOI.ipynb
-Clip_WorldCover_to_AOI.ipynb
-greenspace_predictor_app_FINAL.py
-random_forest_model.pkl
-greenspace_predictor_app_FINAL.py
 /multi_city_training
-Output_London_RFtrained.png
-Output_London_RFtrained2.png
-download.png
-.DS_Store
+/aois_json
+/21 Stacks
+/worldcover
+
+# Temporary images
+*.png
+!notebooks/**/*.png
+
+# Old model files at root (now in models/)
+random_forest_model.pkl
+svm_model.pkl
+svm_scaler.pkl
+feature_scaler.pkl
+unet_model.keras
+unet_normalization_params.json
