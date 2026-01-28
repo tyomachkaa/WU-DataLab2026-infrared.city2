@@ -1,51 +1,8 @@
 # OS files
 .DS_Store
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-venv/
-.venv/
-
-# Jupyter
-.ipynb_checkpoints/
-
-# Data files (large)
-data/sentinel_stacks/
-data/worldcover/
-data/sentinel_raw/
-data/aois/
-
-# Model files (large)
-models/*.pkl
-models/*.keras
-models/*.json
-
-# Outputs (generated)
-outputs/
-
-# Old paths (legacy)
-/cache
-/sentinel_data
-/processed_stacks
-/results
-/ESA_WORLDCOVER_10M_2021_V200
-/ESA_WorldCover_10m_2021_v200_S39E144_Map
-/WorldCover_Clipped
-/multi_city_training
-/aois_json
-/21 Stacks
-/worldcover
-
-# Temporary images
-*.png
-!notebooks/**/*.png
-
-# Old model files at root (now in models/)
-random_forest_model.pkl
-svm_model.pkl
-svm_scaler.pkl
-feature_scaler.pkl
-unet_model.keras
-unet_normalization_params.json
+/data/sentinel_raw
+/data/sentinel_stacks
+/data/worldcover/WorldCover_Artem
+/outputs
+models/random_forest_model.pkl

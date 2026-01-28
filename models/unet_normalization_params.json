@@ -1,0 +1,8 @@
+{
+  "method": "per_channel_minmax",
+  "range": [
+    0,
+    1
+  ],
+  "n_bands": 21
+}
