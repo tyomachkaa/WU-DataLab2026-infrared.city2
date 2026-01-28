@@ -2,7 +2,7 @@
 .DS_Store
 
 /data/sentinel_raw
-/data/sentinel_stacks
 /data/worldcover/WorldCover_Artem
-/outputs
 models/random_forest_model.pkl
+outputs/multi_city_training/run_20260127_212250/confusion_matrix.png
+/outputs
