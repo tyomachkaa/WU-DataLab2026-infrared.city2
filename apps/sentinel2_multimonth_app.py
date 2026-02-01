@@ -1,23 +1,8 @@
 #!/usr/bin/env python3
 """
-Sentinel-2 Multi-Month Processing Web Application
-==================================================
-
-A user-friendly web interface for processing multi-month Sentinel-2 data.
-
-Features:
-- Drag & drop Sentinel-2 folders for multiple months
-- Automatic clipping to AOI
-- Calculates NDVI, EVI, SAVI for each month
-- Downloads 21-band multi-month GeoTIFF stack
-
-Installation:
-    pip install flask rasterio rioxarray xarray geopandas numpy werkzeug
-
-Usage:
-    python sentinel2_multimonth_app.py
-    
-Then open: http://localhost:5002
+Flask app for processing multi-month Sentinel-2 data into 21-band GeoTIFF stacks.
+Handles band loading, AOI clipping, and vegetation index computation (NDVI, EVI, SAVI).
+Runs on port 5002.
 """
 
 from flask import Flask, render_template, request, send_file, jsonify
@@ -36,7 +21,7 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 * 1024  # 5GB max upload
 app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
 
-# HTML Template with Multi-Month Support
+# inline HTML template
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -341,14 +326,14 @@ HTML_TEMPLATE = """
 <body>
     <div class="container">
         <div class="header">
-            <h1>🛰️ Sentinel-2 Multi-Month Processor</h1>
+            <h1>Sentinel-2 Multi-Month Processor</h1>
             <p>Create multi-temporal stacks with vegetation indices</p>
             <p class="subtitle">Upload data for multiple months to create a 21-band stack</p>
         </div>
         
         <div class="card">
             <div class="info-box">
-                <h3>📅 How it works</h3>
+                <h3>How it works</h3>
                 <p>
                     <strong>1.</strong> Select which months you want to process (minimum 1, maximum 3)<br>
                     <strong>2.</strong> Upload Sentinel-2 data for each selected month<br>
@@ -357,23 +342,23 @@ HTML_TEMPLATE = """
                 </p>
             </div>
             
-            <h2 style="margin-bottom: 20px;">📅 Select Months</h2>
+            <h2 style="margin-bottom: 20px;">Select Months</h2>
             <div class="month-selector">
                 <div class="month-option" data-month="april">
                     <input type="checkbox" id="month-april">
-                    <label for="month-april">🌸 April</label>
+                    <label for="month-april">April</label>
                 </div>
                 <div class="month-option" data-month="august">
                     <input type="checkbox" id="month-august">
-                    <label for="month-august">☀️ August</label>
+                    <label for="month-august">August</label>
                 </div>
                 <div class="month-option" data-month="november">
                     <input type="checkbox" id="month-november">
-                    <label for="month-november">🍂 November</label>
+                    <label for="month-november">November</label>
                 </div>
             </div>
             
-            <h2 style="margin-bottom: 20px;">📁 Upload Sentinel-2 Data</h2>
+            <h2 style="margin-bottom: 20px;">Upload Sentinel-2 Data</h2>
             <div class="drop-zones-container">
                 <!-- April -->
                 <div class="month-upload-section" id="april-section">
@@ -419,7 +404,7 @@ HTML_TEMPLATE = """
             </div>
             
             <div class="geojson-section">
-                <h2 style="margin-bottom: 20px;">🗺️ Upload GeoJSON (AOI)</h2>
+                <h2 style="margin-bottom: 20px;">Upload GeoJSON (AOI)</h2>
                 <div class="drop-zone" id="geojson-drop-zone">
                     <i class="fas fa-map-marked-alt"></i>
                     <h3>Drop GeoJSON Here</h3>
@@ -445,7 +430,7 @@ HTML_TEMPLATE = """
         </div>
         
         <div class="card">
-            <h2 style="margin-bottom: 20px;">📦 Output Structure</h2>
+            <h2 style="margin-bottom: 20px;">Output Structure</h2>
             <div class="info-box" style="background: #e3f2fd; border-left-color: #2196f3;">
                 <h3 style="color: #1565c0;">21-Band Multi-Month Stack</h3>
                 <p style="font-family: monospace; font-size: 0.9em; line-height: 2;">
@@ -455,7 +440,7 @@ HTML_TEMPLATE = """
                 </p>
             </div>
             
-            <h2 style="margin-bottom: 20px; margin-top: 30px;">✨ Features</h2>
+            <h2 style="margin-bottom: 20px; margin-top: 30px;">Features</h2>
             <div class="features">
                 <div class="feature">
                     <i class="fas fa-calendar-alt"></i>
@@ -840,16 +825,7 @@ def process():
 
 
 if __name__ == '__main__':
-    print("="*80)
-    print("🛰️  SENTINEL-2 MULTI-MONTH WEB PROCESSOR")
-    print("="*80)
-    print("\n✓ Starting web server...")
-    print("\n📡 Open in browser: http://localhost:5002")
-    print("\n✨ Features:")
-    print("  - Process 1-3 months of Sentinel-2 data")
-    print("  - 7 bands per month (4 spectral + 3 indices)")
-    print("  - Creates 7-21 band multi-temporal stack")
-    print("\n⚠️  Press Ctrl+C to stop the server")
-    print("="*80)
+    print("Sentinel-2 Multi-Month Processor")
+    print("Starting server at http://localhost:5002")
     
     app.run(debug=True, port=5002, host='0.0.0.0')

@@ -1,24 +1,7 @@
 #!/usr/bin/env python3
 """
-Green Space Prediction Web Application
-=======================================
-
-Upload Sentinel-2 multi-month stacks and get instant green space predictions
-using a pre-trained Random Forest model.
-
-Features:
-- Drag & drop Sentinel-2 multi-month stack (21 bands)
-- Instant green space prediction
-- Interactive visualization
-- Downloadable results (prediction map + visualization)
-
-Installation:
-    pip install flask rasterio numpy scikit-learn matplotlib pillow werkzeug joblib
-
-Usage:
-    1. Train a model first (or load existing model)
-    2. python greenspace_predictor_app.py
-    3. Open: http://localhost:5004
+Flask app for predicting green spaces from 21-band Sentinel-2 stacks
+using a pre-trained Random Forest model. Runs on port 5004.
 """
 
 from flask import Flask, render_template, request, send_file, jsonify
@@ -380,7 +363,7 @@ HTML_TEMPLATE = """
 <body>
     <div class="container">
         <div class="header">
-            <div class="icon">🌳</div>
+            <div class="icon"><i class="fas fa-tree" style="color: white;"></i></div>
             <h1>Green Space Predictor</h1>
             <p>Upload Sentinel-2 data and get instant green space predictions</p>
         </div>
@@ -404,7 +387,7 @@ HTML_TEMPLATE = """
             </div>
             
             <div class="info-box">
-                <h3>📋 Requirements</h3>
+                <h3>Requirements</h3>
                 <ul>
                     <li><strong>Input:</strong> Sentinel-2 multi-month stack (.tif)</li>
                     <li><strong>Bands:</strong> 21 bands (7 per month × 3 months)</li>
@@ -412,7 +395,7 @@ HTML_TEMPLATE = """
                 </ul>
             </div>
             
-            <h2 style="margin-bottom: 20px;">📤 Upload Sentinel-2 Stack</h2>
+            <h2 style="margin-bottom: 20px;">Upload Sentinel-2 Stack</h2>
             
             <div class="drop-zone" id="sentinel-drop-zone">
                 <i class="fas fa-cloud-upload-alt"></i>
@@ -438,7 +421,7 @@ HTML_TEMPLATE = """
             </div>
             
             <div class="results-container" id="results-container">
-                <h2 style="margin-bottom: 20px;">📊 Results</h2>
+                <h2 style="margin-bottom: 20px;">Results</h2>
                 
                 <div class="stats-grid" id="stats-grid"></div>
                 
@@ -622,16 +605,15 @@ def load_or_create_model():
     global TRAINED_MODEL, FEATURE_SCALER
 
     if os.path.exists(MODEL_PATH):
-        print(f"✓ Loading trained model from {MODEL_PATH}")
+        print(f"Loading trained model from {MODEL_PATH}")
         TRAINED_MODEL = joblib.load(MODEL_PATH)
 
         # Load the feature scaler if it exists
         if os.path.exists(SCALER_PATH):
-            print(f"✓ Loading feature scaler from {SCALER_PATH}")
+            print(f"Loading feature scaler from {SCALER_PATH}")
             FEATURE_SCALER = joblib.load(SCALER_PATH)
         else:
-            print(f"⚠ No scaler found at {SCALER_PATH}")
-            print(f"  Predictions will run without feature scaling")
+            print(f"No scaler found at {SCALER_PATH}, running without feature scaling")
             FEATURE_SCALER = None
 
         # Try to load metrics from the same folder
@@ -665,7 +647,7 @@ def load_or_create_model():
 
         return True, model_info
     else:
-        print("⚠ No trained model found. Creating demo model...")
+        print("No trained model found, creating demo model...")
         print(f"  Expected model at: {MODEL_PATH}")
         # Create a simple demo model (you should train a real one)
         TRAINED_MODEL = RandomForestClassifier(n_estimators=50, max_depth=15, random_state=42)
@@ -785,7 +767,7 @@ def predict_green_spaces(sentinel_file):
 
 
 def create_visualization(X_stack, prediction_map, stats):
-    """Create a beautiful visualization of the results."""
+    """Create RGB, NDVI, and prediction map visualization."""
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
     
     # 1. RGB Composite (using first month)
@@ -888,29 +870,16 @@ def download(file_type):
 
 
 if __name__ == '__main__':
-    print("="*80)
-    print("🌳 GREEN SPACE PREDICTOR WEB APPLICATION")
-    print("="*80)
-    print("\n✓ Starting web server...")
-    
+    print("Green Space Predictor")
+
     # Load or create model
     model_loaded, model_info = load_or_create_model()
-    
+
     if not model_loaded:
-        print("\n⚠️  WARNING: No trained model found!")
-        print("   Using demo model with limited accuracy.")
-        print("   To use a trained model:")
-        print(f"   1. Train a model using the Multi_City_WorldCover_Training notebook")
-        print(f"   2. Save it as: {MODEL_PATH}")
-        print(f"   3. Restart this application")
-    
-    print("\n📡 Open in browser: http://localhost:5004")
-    print("\n✨ Features:")
-    print("  - Upload 21-band Sentinel-2 stack")
-    print("  - Instant green space prediction")
-    print("  - Interactive visualization")
-    print("  - Downloadable results")
-    print("\n⚠️  Press Ctrl+C to stop the server")
-    print("="*80)
+        print(f"WARNING: No trained model found. Using demo model.")
+        print(f"  Train a model with Multi_City_WorldCover_Training notebook")
+        print(f"  and save to: {MODEL_PATH}")
+
+    print("Starting server at http://localhost:5004")
     
     app.run(debug=True, port=5004, host='0.0.0.0')
